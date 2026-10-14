@@ -22,18 +22,29 @@
 
 注册响应里返回较低的 `schema_version` 可以保留旧行为，代价是失去对应版本的新能力。
 
-## 导出的符号
+## 导出的符号：只有一个
 
-插件必须导出以下三个符号。名字固定，宿主按名查找。
+**宿主只按名字查找一个符号：`cliproxy_plugin_init`。** 见 `internal/pluginhost/loader_windows.go` 的 `dll.FindProc("cliproxy_plugin_init")`。
+
+另外三个函数**不是**导出符号，它们是插件在初始化时填进 `cliproxy_plugin_api` 结构体的函数指针：
 
 ```c
-int  cliproxy_plugin_init(const cliproxy_host_api* host, cliproxy_plugin_api* plugin);
-int  cliproxy_plugin_call(char* method, uint8_t* request, size_t request_len, cliproxy_buffer* response);
-void cliproxy_plugin_free(void* ptr, size_t len);
-void cliproxy_plugin_shutdown(void);
+int cliproxy_plugin_init(const cliproxy_host_api* host, cliproxy_plugin_api* plugin);
 ```
 
-Go 用 `//export cliproxy_plugin_init` 等指令导出，且必须 `import "C"` 并在 `main()` 为空函数的 `package main` 中构建。C 用 `__declspec(dllexport)`（Windows）或 `__attribute__((visibility("default")))`。Rust 用 `#[no_mangle] pub extern "C"`。
+插件在 `cliproxy_plugin_init` 里回填 `plugin->call`、`plugin->free_buffer`、`plugin->shutdown` 三个指针，宿主之后通过结构体调用它们。
+
+实测三语言产物的导出表，可以印证这一点：
+
+| 骨架 | 导出符号数 | 说明 |
+|---|---|---|
+| C 示例 | 1 | 源码里只有一处 `CLIPROXY_EXPORT`，就在 `cliproxy_plugin_init` 上 |
+| Rust 示例 | 1 | 只有一处 `#[no_mangle] pub extern "C"` |
+| Go 示例 | 4 | cgo 为了让 Go 函数能被取地址，把四个都导出成 C 符号。这是 cgo 的实现细节，不是契约要求 |
+
+写 C 或 Rust 插件时只需要导出一个函数。写 Go 插件时四个 `//export` 指令都要有，否则 `C.cliproxyPluginCall` 这类表达式取不到地址，编译不过。
+
+C 用 `__declspec(dllexport)`（Windows）或 `__attribute__((visibility("default")))`。Rust 用 `#[no_mangle] pub extern "C"`。Go 用 `//export` 且必须 `import "C"`，并在 `package main` 中留一个空的 `main()`。
 
 ## 宿主函数表
 

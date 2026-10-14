@@ -42,6 +42,16 @@ Go 骨架中的占位符，由 `scripts/new-plugin.sh` 替换：
 
 C 与 Rust 骨架中的示例插件 ID（`example-simple-c` / `example-simple-rust`）需要手工替换，`new-plugin.sh` 会做批量替换。
 
+## 构建验证状态
+
+| 骨架 | 是否实测构建 | 结果 |
+|---|---|---|
+| `skeleton-go` | 是 | 对本地 v8 源码构建成功，装载进 CPA 8.0.23 后 `registered` 与 `effective_enabled` 均为 true |
+| `skeleton-rust` | 是 | `cargo build --release --locked` 成功，产出 137 KB cdylib，可加载，导出 `cliproxy_plugin_init` |
+| `skeleton-c` | **否** | 本机没有 `cmake` 与 `make`，无法构建。`CMakeLists.txt` 与 `plugin.c` 逐字取自官方示例，未做改动 |
+
+C 骨架的构建方式与官方示例完全一致，但**在本机未经验证**。第一次用它时先确认 `cmake` 可用。
+
 ## 构建
 
 ```bash

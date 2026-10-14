@@ -30,6 +30,7 @@ CLIProxyAPI 的插件是**原生动态库**，加载进 CPA 进程内，通过�
 | 你现在要做的事 | 读这个 |
 |---|---|
 | 搞清需求该对应哪个能力 | `references/phase-1-requirements.md` |
+| 把选好的能力变成声明与配置草案 | `scripts/plan-capabilities.py` |
 | 定语言、建目录、跑通构建 | `references/phase-2-plan.md` |
 | 写代码、调 ABI、处理错误 | `references/phase-3-develop.md` |
 | 验证插件真的生效了 | `references/phase-4-test.md` |
@@ -60,6 +61,15 @@ CLIProxyAPI 的插件是**原生动态库**，加载进 CPA 进程内，通过�
 3. **声明了就一定要实现。** 宿主按声明调用，声明了却返回 `unknown_method` 会污染该阶段的所有请求。
 
 产出：能力清单、配置字段草案、优先级理由、**不做清单**。
+
+选好能力后直接跑一次，把结论落成可粘贴的文本：
+
+```bash
+scripts/plan-capabilities.py <能力键>... --id <plugin-id>
+```
+
+它会输出 `capabilities` 对象、dispatch 必须覆盖的方法清单、`plugins.configs` 配置块，
+并在你选了修饰键却没选对应基础能力时给出提示。
 
 ### 阶段二：产出计划
 

@@ -104,6 +104,9 @@ scripts/verify-plugin.sh my-plugin "$MANAGEMENT_KEY"
 | `verify-plugin.sh` 反例 | 对不存在的 id、错误管理密钥运行 | 均退出非 0，并打印已知 id 列表 |
 | 管理 API 响应结构 | 与官方文档描述对照 | 文档缺 `configured` 字段，实际响应多一个 |
 | 工具链兼容性 | 同一骨架用两个 MinGW 各构建一次并尝试加载 | TDM-GCC 10.3.0 失败，MinGW-W64 11.3.0 成功 |
+| Rust 骨架 | `cargo build --release --locked`，再尝试加载 | 构建成功，137 KB cdylib，可加载 |
+| 导出符号的真实数量 | 用 `objdump -p` 读导出表，并与宿主 `FindProc` 对照 | C 与 Rust 各 1 个，Go 4 个；宿主只按名查找 `cliproxy_plugin_init` |
+| C 骨架 | 本机无 `cmake`、`make` | **未能验证** |
 
 最后一项是本机实测发现的真实阻塞问题，已写入 `references/pitfalls.md` 第 13 条。诊断结论是 TDM-GCC 10.3.0 链接出的 PE 节表含坏节，Windows 加载器直接拒绝整个映像。
 
@@ -112,10 +115,23 @@ scripts/verify-plugin.sh my-plugin "$MANAGEMENT_KEY"
 目录布局参考了 `davidvkimball/obsidian-dev-skills` 的组织方式：一个入口 `SKILL.md`
 加一个按主题切分的 `references/` 目录，正文只放决策规则，细节全部下沉到参考文件。
 
-差异在于切分维度。那个仓库按**角色**拆成 dev / ops / ref / theme-dev 四个并列 skill；
-本 skill 是一个 skill，`references/` 按**生命周期阶段**切分，因为 CPA 插件开发的难点
-在阶段之间的衔接（能力选错要返工、声明与实现不一致会静默失败），而不是角色分工。
-正文里的 Do / Don't 表沿用了同类 skill 的紧凑写法，内容全部针对 CPA 重写。
+读过该仓库 `obsidian-dev/SKILL.md` 的实际内容后，有三点观察：
+
+**它走的是极薄路由风格。** `obsidian-dev/SKILL.md` 只有 35 行，正文仅 `Purpose`、
+`Scope`、`Core Rules`、`Bundled Resources` 四节，所有实质内容都在 `references/` 下。
+本 skill 的 `SKILL.md` 是 148 行，正文承载了决策树、硬约束表与常见误解表。
+
+这个差异是**刻意保留**的。官方 skill 编写指南要求正文承载工作流与规则、控制在 500 行以内，
+`skill-creator` 也把正文定位成"操作手册"而非纯索引。纯 35 行路由在 CPA 场景下会丢掉最
+该前置的东西：能力选型规则、`http_status` 这类一写错就静默失败的约束。所以保留了内容，
+只借用了它的**分文件方式**与**明确的资源指引段落**。
+
+**切分维度也不同。** 那个仓库按角色拆成 dev / ops / ref / theme-dev 四个并列 skill；
+本 skill 是一个 skill，`references/` 按生命周期阶段切分，因为 CPA 插件开发的难点在阶段
+衔接处（能力选错要返工、声明与实现不一致会静默失败），而不是角色分工。
+
+**表格化写法是共通的。** 正文里的 Do / Don't 表借用了同类 skill 的紧凑风格，内容全部
+针对 CPA 重写，没有照抄任何一行。
 
 ## 素材来源
 
