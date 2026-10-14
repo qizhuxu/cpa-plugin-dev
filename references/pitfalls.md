@@ -108,3 +108,51 @@ Windows 会锁住已加载的 DLL。宿主通过影子副本规避（见 `config
 标准动态库插件与 CPA 二进制同进程。宿主可以恢复部分 panic，但**不能阻止插件退出进程、破坏内存、修改进程全局状态或泄露敏感数据**。
 
 需要隔离的代码应放在外部进程，通过 HTTP 或 CLI 集成，而不是写成插件。
+
+## 13. MinGW 工具链可能产出无法加载的 DLL
+
+这是本机实测到的问题，**在 Windows 上用 Go 写插件时最可能先撞上它**。
+
+症状是 CPA 启动日志里出现：
+
+```
+pluginhost: failed to load plugin <id> from plugins/<id>.dll:
+Failed to load .../cliproxy-pluginhost/pid-<n>/cliproxy-plugin-<id>-<hash>.dll:
+%1 is not a valid Win32 application.
+```
+
+`%1 is not a valid Win32 application` 是 `ERROR_BAD_EXE_FORMAT`。它**不一定是位数不匹配**。本机两边的 PE 头都是 `machine=0x8664`（amd64），仍然报这个错。
+
+### 真正的病因
+
+用 `go build -buildmode=c-shared` 配 **TDM-GCC 10.3.0**（`tdm64-1`）构建出的 DLL，PE 节表是坏的：前三个节全部声明 `VirtualAddress = 0x32910000`，而 `SizeOfImage = 0x26C2000`。三个节地址相同且都落在映像之外，Windows 加载器直接拒绝整个映像。
+
+对照数据：
+
+| 构建方式 | 结果 |
+|---|---|
+| 同一 gcc 编译的纯 C DLL | 能加载 |
+| TDM-GCC 10.3.0 加 Go `-buildmode=c-shared` | 加载失败，`ERROR_BAD_EXE_FORMAT` |
+| MinGW-W64 11.3.0（Brecht Sanders 构建） | **能加载** |
+
+同一个 gcc 编出的纯 C DLL 正常，说明问题出在 Go 与该 ld 的链接环节，不是工具链整体不可用。
+
+### 排查方法
+
+1. 先确认不是位数问题。exe 与 dll 的 PE `machine` 字段应当一致，amd64 是 `0x8664`。
+2. 再查节表：每个节的 `VirtualAddress` 必须小于 `SizeOfImage`。
+3. 换一个 MinGW 重编，看是否恢复：
+
+```bash
+CC="<另一个 mingw>/bin/gcc.exe" go build -buildmode=c-shared -o out.dll .
+```
+
+### 结论
+
+**Windows 上不要默认用 `PATH` 里的第一个 `gcc`。** 构建完立刻做一次加载测试，能加载再往下走：
+
+```bash
+python -c "import ctypes; ctypes.WinDLL(r'<构建产物绝对路径>')"
+```
+
+遇到 `ERROR_BAD_EXE_FORMAT` 而位数一致时，优先怀疑工具链，换 MinGW-W64 官方构建或改用 MSVC。

@@ -81,6 +81,15 @@ require github.com/router-for-me/CLIProxyAPI/v8 v8.x.x
 
 `go build -buildmode=c-shared` 需要 CGO 可用（需要 C 工具链）。构建产出的 `.h` 文件不需要分发，可以删掉。
 
+**Windows 上先验证工具链。** `-buildmode=c-shared` 会调用 `PATH` 上的 `gcc`，而某些 MinGW 发行版（实测 TDM-GCC 10.3.0）会链接出 Windows 拒绝加载的映像，报 `ERROR_BAD_EXE_FORMAT`。构建完立刻做一次加载测试，不要等到配好 CPA 才发现：
+
+```bash
+# 能成功返回才算工具链可用
+python -c "import ctypes; ctypes.WinDLL(r'<构建产物绝对路径>')"
+```
+
+失败就换 MinGW-W64 官方构建或 MSVC。完整排查见 `pitfalls.md` 第 13 条。
+
 ## 放置位置
 
 构建产物放进 CPA 的插件目录，按搜索优先级选择：

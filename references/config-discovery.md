@@ -104,16 +104,62 @@ v0 与 v8 两套路径都可用，v8 是新契约。
 | `PUT/PATCH /v8/management/config/plugins/configs/<id>` | 替换或合并该插件配置对象 |
 | `PUT /v8/management/config/plugins/configs/<id>/enabled` | 只改该开关，**不改** `plugins.enabled` |
 
-`GET /v8/management/plugins` 的四个状态字段含义不同，不要混用：
+### `GET /v8/management/plugins` 的实际响应结构
+
+实测响应（CPA 8.0.23）：
+
+```json
+{
+  "plugins_enabled": true,
+  "plugins_dir": "plugins",
+  "plugins": [
+    {
+      "id": "demo-normalizer",
+      "path": "plugins/demo-normalizer.dll",
+      "configured": true,
+      "enabled": true,
+      "registered": true,
+      "effective_enabled": true,
+      "supports_oauth": false,
+      "oauth_provider": "",
+      "supports_quota": false,
+      "logo": "",
+      "config_fields": [
+        { "name": "mode", "type": "enum", "enum_values": ["safe", "fast"], "description": "..." }
+      ],
+      "menus": [],
+      "metadata": {
+        "name": "demo-normalizer",
+        "version": "0.1.0",
+        "author": "...",
+        "github_repository": "https://github.com/owner/demo-normalizer",
+        "logo": "",
+        "config_fields": []
+      }
+    }
+  ]
+}
+```
+
+`metadata` 里是 **snake_case**（`github_repository`、`config_fields`），而注册响应里插件**返回**的是 Go 导出名风格（`GitHubRepository`、`ConfigFields`）。宿主在转成管理 API 响应时做了改名。
+
+### 五个状态字段
 
 | 字段 | 含义 |
 |---|---|
-| `plugins_enabled` | 全局开关 |
+| `plugins_enabled` | 全局开关，位于响应顶层 |
+| `configured` | 该插件有 `plugins.configs.<id>` 条目 |
 | `enabled` | 单插件配置开关 |
 | `registered` | 动态库已加载并完成注册 |
-| `effective_enabled` | 三者同时满足后的实际启用状态 |
+| `effective_enabled` | 以上条件同时满足后的实际启用状态 |
 
 **验证插件是否真正生效，看 `registered` 与 `effective_enabled`，不要只看 `enabled`。**
+
+官方《插件开发》文档只列了四个字段，`configured` 是实际响应里多出来的第五个。插件没写进 `plugins.configs` 时 `configured` 为 `false`，此时即使动态库能加载也不会注册。
+
+`path` 是**相对于 CPA 工作目录**的路径。加载失败时日志里出现的是影子副本的绝对路径，两者不同，不要混淆。
+
+`menus` 是插件通过 `management.register` 返回的 `resources` 数组，条目形如 `{path, menu, description}`，宿主渲染到 `/v0/resource/plugins/<id>/<path>`。
 
 ## 构建能力探测
 

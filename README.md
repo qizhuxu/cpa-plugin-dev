@@ -99,6 +99,13 @@ scripts/verify-plugin.sh my-plugin "$MANAGEMENT_KEY"
 | Go 骨架可构建 | 对本地源码 `go mod tidy` 加 `go build -buildmode=c-shared` | 成功，产出 8 MB DLL |
 | 导出符号 | 在构建产物中检索四个必需符号 | 全部存在 |
 | 校验脚本准确性 | 与宿主 schema diff，并对含错样例运行 | 27 对 27；含错样例报出 10 个问题 |
+| **实例加载与生效** | 启动 CPA 8.0.23，装载插件，读 `GET /v8/management/plugins` | `configured`、`enabled`、`registered`、`effective_enabled` 全为 true |
+| `verify-plugin.sh` 正例 | 对已加载插件运行 | 退出码 0，五个状态字段与 `path` 正确 |
+| `verify-plugin.sh` 反例 | 对不存在的 id、错误管理密钥运行 | 均退出非 0，并打印已知 id 列表 |
+| 管理 API 响应结构 | 与官方文档描述对照 | 文档缺 `configured` 字段，实际响应多一个 |
+| 工具链兼容性 | 同一骨架用两个 MinGW 各构建一次并尝试加载 | TDM-GCC 10.3.0 失败，MinGW-W64 11.3.0 成功 |
+
+最后一项是本机实测发现的真实阻塞问题，已写入 `references/pitfalls.md` 第 13 条。诊断结论是 TDM-GCC 10.3.0 链接出的 PE 节表含坏节，Windows 加载器直接拒绝整个映像。
 
 ## 布局参考
 
