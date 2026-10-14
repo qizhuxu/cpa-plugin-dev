@@ -156,3 +156,31 @@ python -c "import ctypes; ctypes.WinDLL(r'<构建产物绝对路径>')"
 ```
 
 遇到 `ERROR_BAD_EXE_FORMAT` 而位数一致时，优先怀疑工具链，换 MinGW-W64 官方构建或改用 MSVC。
+
+## 14. 执行器插件还需要一个凭证，否则宿主根本不会调用它
+
+实测：一个声明了 `executor` 加 `model_provider` 的插件，它的模型会出现在 `/v1/models` 里，
+但真正发请求时返回：
+
+```
+HTTP 503
+{"error":{"message":"auth_not_found: no auth available (providers=demo-executor, model=demo-error-model)","type":"server_error","code":"internal_server_error"}}
+```
+
+宿主在 `sdk/cliproxy/auth/conductor_execution.go` 就拒绝了，**`executor.execute` 从未被调用**。
+
+**所以"模型注册成功"不等于"执行器能跑"。** 模型出现在列表里只证明 `model_provider` 生效了。
+
+### 加 api-keys 组不管用
+
+实测给该 provider 加一个 `api-keys.<provider>` 配置组（`name` 加 `base-url` 加 `keys`），
+**仍然报同样的错**。这个配置组不会为插件自有 provider 产生凭证。
+
+### 正确做法（未逐条验证）
+
+插件自有 provider 的凭证应由插件自己的 `auth_provider` 能力提供：在 `auths/` 下放一个凭证
+文件，通过 `auth.parse` 认领它并返回 `AuthData`。社区插件普遍同时声明
+`auth_provider` 加 `model_provider` 加 `executor` 三个能力，就是这个原因。
+
+**这一条只验证到"api-keys 组不行"，没有验证 auth_provider 路线确实可行。** 第一次写
+执行器插件时，把"凭证从哪来"当成一个独立步骤先解决掉，再调执行逻辑。

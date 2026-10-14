@@ -112,6 +112,7 @@ curl -X DELETE http://127.0.0.1:8317/v8/management/plugins/<plugin-id> \
 | `registered: false` | 库没被加载 | 核对文件名是否为插件 ID、扩展名是否匹配平台、`plugins.dir` 路径是否正确 |
 | `registered: true` 但 `effective_enabled: false` | 某个开关没开 | 同时检查 `plugins_enabled` 与 `enabled` |
 | 所有请求返回 `500 internal_server_error` | 错误信封没设 `http_status` | 见 `pitfalls.md` 第 4 条 |
+| 请求返回 `auth_not_found`（503） | provider 没有可用凭证，宿主在调用执行器之前就拒绝了 | 执行器插件同样需要凭证；见 `pitfalls.md` 第 14 条 |
 | 宿主调用某 method 收到 `unknown_method` | 声明了能力但 dispatch 没覆盖 | 见 `phase-3-develop.md` 的常见错误表 |
 | 插件加载后进程崩溃 | 内存所有权错误，或用 Go 内存交给 C 释放 | 用 `C.CBytes` 分配响应缓冲区 |
 | 插件递归调用自己 | 嵌套回调没转发 `host_callback_id` | 见 `host-callbacks.md` |

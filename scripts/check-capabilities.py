@@ -94,6 +94,31 @@ def declared_keys_in(text):
     return found
 
 
+def declared_any_in(text):
+    """Find quoted keys followed by a colon, whatever the value type.
+
+    Modifier fields such as executor_input_formats hold arrays and
+    executor_model_scope holds a string, so the boolean-only scan above
+    misses them and reports a false 'declared without' error.
+    """
+    found = set()
+    for key in VALID_KEYS:
+        needle = chr(34) + key + chr(34)
+        start = 0
+        while True:
+            i = text.find(needle, start)
+            if i < 0:
+                break
+            j = i + len(needle)
+            while j < len(text) and text[j] in WS:
+                j += 1
+            if j < len(text) and text[j] == chr(58):
+                found.add(key)
+                break
+            start = i + 1
+    return found
+
+
 def iter_files(paths):
     out = []
     for p in paths:
@@ -136,6 +161,7 @@ def main(argv):
     files = iter_files(argv[1:])
     declared_json = set()
     declared_src = set()
+    declared_any = set()
     used = set()
 
     for path in files:
@@ -151,6 +177,7 @@ def main(argv):
         if caps:
             declared_json.update(k for k, v in caps.items() if v is True)
         declared_src.update(declared_keys_in(text))
+        declared_any.update(declared_any_in(text))
         used.update(METHOD_RE.findall(text))
 
     declared = declared_json or declared_src
@@ -180,7 +207,7 @@ def main(argv):
 
     if "executor" in declared:
         for mod in EXECUTOR_MODIFIERS[1:]:
-            if mod not in declared_src and mod not in declared_json:
+            if mod not in declared_any and mod not in declared_json:
                 print("ERROR executor declared without %s" % mod)
                 print("      executors must declare at least one format")
                 problems += 1

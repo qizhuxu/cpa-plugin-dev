@@ -103,6 +103,8 @@ scripts/verify-plugin.sh my-plugin "$MANAGEMENT_KEY"
 | `verify-plugin.sh` 正例 | 对已加载插件运行 | 退出码 0，五个状态字段与 `path` 正确 |
 | `verify-plugin.sh` 反例 | 对不存在的 id、错误管理密钥运行 | 均退出非 0，并打印已知 id 列表 |
 | 管理 API 响应结构 | 与官方文档描述对照 | 文档缺 `configured` 字段，实际响应多一个 |
+| 执行器插件需要凭证 | 构建 executor 加 model_provider 插件并实际发请求 | 确认：无凭证时返回 `auth_not_found`，执行器从未被调用；加 `api-keys` 组无效 |
+| `http_status` 映射表 | 尝试用执行器插件实测 429 与省略两种情形 | **未完成**，被上一条的凭证问题阻塞 |
 | 工具链兼容性 | 同一骨架用两个 MinGW 各构建一次并尝试加载 | TDM-GCC 10.3.0 失败，MinGW-W64 11.3.0 成功 |
 | Rust 骨架 | `cargo build --release --locked`，再尝试加载 | 构建成功，137 KB cdylib，可加载 |
 | 导出符号的真实数量 | 用 `objdump -p` 读导出表，并与宿主 `FindProc` 对照 | C 与 Rust 各 1 个，Go 4 个；宿主只按名查找 `cliproxy_plugin_init` |
