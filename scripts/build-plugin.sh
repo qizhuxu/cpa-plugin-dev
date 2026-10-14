@@ -31,11 +31,20 @@ BIN_DIR="$PLUGIN_DIR/bin"
 mkdir -p "$BIN_DIR"
 
 # Extension rules from internal/pluginhost/platform.go
+# Decide the extension from uname first. Testing MSYSTEM or WINDIR alone can
+# misfire: under WSL those can leak in through WSLENV and a Linux build would
+# be named .dll.
 case "$(uname -s)" in
-  Darwin) EXT=dylib ;;
-  *) if [ -n "${OS:-}" ] && [ "${OS:-}" = "Windows_NT" ]; then EXT=dll; else EXT=so; fi ;;
+  Darwin)                       EXT=dylib ;;
+  Linux|FreeBSD|OpenBSD|NetBSD) EXT=so ;;
+  *)
+    if [ -n "${MSYSTEM:-}" ] || [ -n "${WINDIR:-}" ] || [ -n "${OS:-}" ]; then
+      EXT=dll
+    else
+      EXT=so
+    fi
+    ;;
 esac
-if [ -n "${MSYSTEM:-}" ] || [ -n "${WINDIR:-}" ]; then EXT=dll; fi
 
 echo "building '$PLUGIN_ID' ($LANG) -> $BIN_DIR/$PLUGIN_ID.$EXT"
 

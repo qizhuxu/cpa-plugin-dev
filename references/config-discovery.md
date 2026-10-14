@@ -72,7 +72,7 @@ plugins
 
 同一个插件 ID 在多个目录出现时，优先级更高的目录先生效。
 
-## Windows 加载机制：影子副本
+## Windows 专属：影子副本加载
 
 `loader_windows.go` 使用 `syscall.LoadDLL`，并且**不直接从原路径加载**，而是先做一次 shadow copy：
 
@@ -85,6 +85,31 @@ shadowCopyPlugin(file) -> 复制到进程私有的影子目录 -> 从影子路�
 影子目录按进程 ID 命名（`shadowPluginProcessDirName(pid)`），启动时会清理陈旧的影子文件（`removeStaleShadowPlugins`），并按内容摘要校验是否可复用（`shadowPluginMatches`）。
 
 这解释了为什么**修改插件后必须触发重新加载或重启**：仅替换磁盘文件不会让已加载的实例改变。
+
+**影子副本是 Windows 专属机制。** Linux 与 macOS 走 `loader_unix.go`，直接 `dlopen(file.Path)`，没有影子副本。
+
+## Linux / macOS 加载机制
+
+`internal/pluginhost/loader_unix.go` 用 `dlopen(path, RTLD_NOW | RTLD_LOCAL)`，然后 `dlsym(handle, "cliproxy_plugin_init")`。
+
+两个 flag 的含义值得记住：
+
+| flag | 含义 |
+|---|---|
+| `RTLD_NOW` | 加载时解析全部未定义符号。缺依赖库会在加载阶段立刻失败，而不是等到调用时 |
+| `RTLD_LOCAL` | 插件符号不进入全局命名空间。插件之间不会符号冲突，但也别指望靠符号插入互相影响 |
+
+**Linux 上的加载失败信息与 Windows 完全不同**，宿主报的是 `dlopen <路径>: <dlerror()>`。常见 dlerror 文本：
+
+| dlerror 文本 | 含义 | Windows 对应 |
+|---|---|---|
+| `invalid ELF header` | 架构不符或文件不是 ELF | `%1 is not a valid Win32 application` |
+| `wrong ELF class: ELFCLASS32` | 32 位库装进 64 位宿主 | 同上 |
+| `cannot open shared object file` | 文件不存在，或依赖库缺失 | `The specified module could not be found` |
+| `undefined symbol: X` | 某个符号没解析到（`RTLD_NOW` 直接拒绝） | 通常是加载期无提示，调用时崩 |
+| `file too short` | 文件被截断，构建没写完 | 同类 |
+
+排查顺序与 Windows 一致：先看文件名与扩展名，再看架构，最后看依赖。
 
 ## 配置热重载
 

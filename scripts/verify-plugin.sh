@@ -160,6 +160,15 @@ for m in menus:
 __PYEOF2__
 
 echo
-echo "note: replacing the library on disk does NOT affect a running instance."
-echo "      Windows locks loaded DLLs and the host loads from a shadow copy."
-echo "      Reinstall via the management API or restart the service."
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*|*NT*)
+    echo "note: Windows locks loaded DLLs and the host loads from a shadow copy,"
+    echo "      so replacing the file on disk does NOT affect a running instance."
+    echo "      Reinstall via the management API or restart the service."
+    ;;
+  *)
+    echo "note: replacing the file on disk does NOT affect a running instance."
+    echo "      The host holds the library open; restart the service or reinstall"
+    echo "      via the management API to pick up a new build."
+    ;;
+esac

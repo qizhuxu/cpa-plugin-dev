@@ -184,3 +184,36 @@ HTTP 503
 
 **这一条只验证到"api-keys 组不行"，没有验证 auth_provider 路线确实可行。** 第一次写
 执行器插件时，把"凭证从哪来"当成一个独立步骤先解决掉，再调执行逻辑。
+
+## 15. 容器里跑 CPA，管理 API 从宿主机访问返回 403
+
+实测：CPA 跑在容器里、端口映射到宿主机，`GET /v8/management/plugins` 返回
+
+```
+HTTP 403  {"error":"remote management disabled"}
+```
+
+容器把宿主机请求看作来自 Docker 网桥，不是 localhost，而 `management.allow-remote` 默认 `false`。**带不带管理密钥都是 403**，所以别误判成密钥错了。
+
+在容器使用的配置里设 `management.allow-remote: true` 即可。详见 `phase-4-test.md`。
+
+## 16. 跨发行版 glibc 版本可能导致插件加载失败
+
+插件是原生动态库，依赖宿主环境的 glibc。官方 `Dockerfile` 运行时基底是 `debian:bookworm`（glibc 2.36），比多数开发机旧。
+
+实测：Ubuntu 24.04（glibc 2.39）构建的插件最高只要求 `GLIBC_2.34`，在 bookworm 里能加载。但这不是必然，取决于插件用到的符号。
+
+失败时的报错是 `version 'GLIBC_2.x' not found`，出现在 `dlopen` 阶段。
+
+诊断与规避见 `phase-4-test.md` 的容器一节。最稳的做法是在容器基底镜像里构建。
+
+## 17. release 里有 `_no-plugin` 变体，别下错
+
+官方 release 每个平台提供两个包，名字只差一个后缀：
+
+```
+CLIProxyAPI_<ver>_linux_amd64.tar.gz
+CLIProxyAPI_<ver>_linux_amd64_no-plugin.tar.gz
+```
+
+`no-plugin` 是 `CGO_ENABLED=0` 构建的，**加载不了任何插件**。这个区分只在响应头 `X-CPA-SUPPORT-PLUGIN` 上暴露，容易下错之后排查半天。

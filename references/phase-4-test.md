@@ -120,6 +120,75 @@ curl -X DELETE http://127.0.0.1:8317/v8/management/plugins/<plugin-id> \
 | 改了代码但行为没变 | 旧实例仍在运行 | 走卸载接口或重启 |
 | 请求量一大就出错 | 共享状态没加锁 | 加锁或用原子操作 |
 
+## 在容器里运行 CPA
+
+容器化是常见部署方式，插件路径同样适用，但有三个容器特有的坑。
+
+### 坑一：管理 API 从宿主机访问会被拒
+
+实测：CPA 跑在容器里、端口映射到宿主机时，
+
+```
+GET /v8/management/plugins  ->  HTTP 403  {"error":"remote management disabled"}
+```
+
+容器把宿主机的请求看作来自 Docker 网桥地址，不是 localhost，而 `management.allow-remote` 默认是 `false`。**带不带管理密钥都一样返回 403。**
+
+修法是在容器使用的配置里打开：
+
+```yaml
+management:
+  allow-remote: true
+```
+
+打开后从宿主机验证正常：
+
+```
+probe  registered=True  effective=True  path=plugins/probe.so
+```
+
+### 坑二：跨发行版的 glibc 版本
+
+官方 `Dockerfile` 的运行时基底是 `debian:bookworm`（glibc 2.36）。如果你在更新的发行版上构建插件，可能链接到更新的 glibc 符号，进容器就加载不了。
+
+实测数据：在 Ubuntu 24.04（glibc 2.39）上构建的插件，最高只要求 `GLIBC_2.34`，所以在 bookworm（2.36）里**能加载**。但这取决于插件实际用到的符号，不是必然。
+
+诊断方法，比较两边：
+
+```bash
+# 插件要求的最高 glibc 版本
+objdump -T <plugin>.so | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1
+
+# 容器里的 glibc 版本
+docker run --rm <image> ldd --version | head -1
+```
+
+前者高于后者就会失败，报 `version 'GLIBC_2.x' not found`。
+
+**要彻底避开这个问题，就在容器基底镜像里构建插件**，而不是在宿主机构建再挂载进去。
+
+### 坑三：release 里有 `_no-plugin` 变体
+
+官方 release 同时提供两个 linux 包：
+
+```
+CLIProxyAPI_8.0.28_linux_amd64.tar.gz
+CLIProxyAPI_8.0.28_linux_amd64_no-plugin.tar.gz     <-- 不带插件支持
+```
+
+`no-plugin` 是 `CGO_ENABLED=0` 构建的，**装不了任何插件**。下载时看清楚。
+
+### 挂载
+
+官方 `docker-compose.yml` 已经把插件目录映射好了：
+
+```yaml
+volumes:
+  - ${CLI_PROXY_PLUGIN_PATH:-./plugins}:/CLIProxyAPI/plugins
+```
+
+容器内的工作目录是 `/CLIProxyAPI`，所以 `plugins.dir` 用默认的 `"plugins"` 就指向挂载点。
+
 ## 用脚本验证
 
 ```bash

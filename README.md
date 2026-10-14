@@ -109,8 +109,17 @@ scripts/verify-plugin.sh my-plugin "$MANAGEMENT_KEY"
 | Rust 骨架 | `cargo build --release --locked`，再尝试加载 | 构建成功，137 KB cdylib，可加载 |
 | 导出符号的真实数量 | 用 `objdump -p` 读导出表，并与宿主 `FindProc` 对照 | C 与 Rust 各 1 个，Go 4 个；宿主只按名查找 `cliproxy_plugin_init` |
 | C 骨架 | 无 `cmake`，改用 `gcc -shared` 直接编译 | 构建成功，273 KB DLL，可加载，导出 1 个符号 |
+| **Linux 原生构建** | Ubuntu 24.04 + Go 1.27.2，用已发布 module `v8.0.28` | 成功，产出 `probe.so`，平台识别正确 |
+| **Linux 端到端** | Linux CPA v8.0.28 装载插件 | `registered` 与 `effective_enabled` 均为 true，路径 `plugins/probe.so` |
+| `verify-plugin.sh` on Linux | 对原生 CPA 运行 | 四个状态字段与路径均正确 |
+| C 骨架 on Linux | gcc 13.3 直接编译 | 成功，24 KB `.so`，导出 1 个符号 |
+| Rust 骨架 on Linux | cargo 1.99 `--release --locked` | 成功，438 KB `.so`，导出 1 个符号 |
+| **Docker** | `eceasy/cli-proxy-api` 容器挂载 `plugins/` | 插件加载并注册成功；管理 API 需 `allow-remote: true` |
+| `verify-plugin.sh` 对容器目标 | 经映射端口查询容器内 CPA | 正常工作 |
+| 跨发行版 glibc | Ubuntu 24.04 构建的 `.so` 放进 `debian:bookworm` | 可加载（最高需 `GLIBC_2.34`，bookworm 为 2.36） |
+| `go.mod` 模板默认路径 | 不改模板直接 `go mod tidy` | 成功，`v8.0.0` 是真实 tag |
 
-最后一项是本机实测发现的真实阻塞问题，已写入 `references/pitfalls.md` 第 13 条。诊断结论是 TDM-GCC 10.3.0 链接出的 PE 节表含坏节，Windows 加载器直接拒绝整个映像。
+第 13 条那个工具链问题是 Windows 本机实测发现的。**Linux 与 Docker 的结果来自一台独立的 Ubuntu 24.04 机器**（AWS us-east，2 vCPU），不是在本机推断的。那一轮实测额外暴露了三个问题：`verify-plugin.sh` 在 Linux 上打印了 Windows 专属的影子副本提示；容器里的 CPA 管理 API 默认拒绝宿主机访问（403）；release 提供 `_no-plugin` 变体容易下错。三处都已修正并写入 `references/pitfalls.md` 第 15 至 17 条与 `phase-4-test.md` 的容器一节。
 
 ## 布局参考
 
