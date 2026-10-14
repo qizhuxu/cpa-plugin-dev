@@ -85,6 +85,6 @@
 - [ ] 全部方法名与 `pluginabi/types.go` 常量一致
 - [x] Go 骨架可直接构建（对本地 v8 源码实测，产出 8 MB DLL，装载后 registered 与 effective_enabled 均为 true）
 - [x] Rust 骨架可直接构建（cargo build --release --locked 成功，产出 137 KB cdylib，可加载，导出 cliproxy_plugin_init）
-- [ ] C 骨架可直接构建（**未验证**：本机没有 cmake 与 make，无法构建；CMakeLists.txt 逐字取自官方示例）
+- [x] C 骨架可直接构建（本机无 cmake，改用 `gcc -shared` 直接编译成功，产出 273 KB DLL，可加载，导出 cliproxy_plugin_init）
 - [ ] 四阶段闭环均有独立 reference 且互相链接
 - [ ] 无编造的接口、字段或命令

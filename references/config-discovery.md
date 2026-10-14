@@ -159,7 +159,25 @@ v0 与 v8 两套路径都可用，v8 是新契约。
 
 `path` 是**相对于 CPA 工作目录**的路径。加载失败时日志里出现的是影子副本的绝对路径，两者不同，不要混淆。
 
-`menus` 是插件通过 `management.register` 返回的 `resources` 数组，条目形如 `{path, menu, description}`，宿主渲染到 `/v0/resource/plugins/<id>/<path>`。
+`menus` 是插件通过 `management.register` 返回的 `resources` 数组，条目形如 `{path, menu, description}`。
+
+**路径在注册与查询两个方向上的形式不同，容易搞错：**
+
+| 方向 | 形式 | 例子 |
+|---|---|---|
+| 插件注册时返回 | **相对路径** | `"/status"` |
+| 管理 API 查询时返回 | **绝对路径** | `"/v0/resource/plugins/demo-management/status"` |
+
+宿主在注册时把相对路径拼到 `/v0/resource/plugins/<pluginID>/` 下，查询时回显拼好的完整路径。写校验脚本时不要再拼一次前缀，否则会得到重复路径。
+
+实测的鉴权边界：
+
+| 路径 | 不带管理密钥 |
+|---|---|
+| `/v0/resource/plugins/demo-management/status` | `200`，正常返回页面 |
+| `/v0/management/plugins/demo-management/status` | `401` |
+
+这印证了 `pitfalls.md` 第 8 条：资源页不走管理鉴权，敏感操作必须放在 `/v0/management/...` 路由后面。
 
 ## 构建能力探测
 

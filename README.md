@@ -106,7 +106,7 @@ scripts/verify-plugin.sh my-plugin "$MANAGEMENT_KEY"
 | 工具链兼容性 | 同一骨架用两个 MinGW 各构建一次并尝试加载 | TDM-GCC 10.3.0 失败，MinGW-W64 11.3.0 成功 |
 | Rust 骨架 | `cargo build --release --locked`，再尝试加载 | 构建成功，137 KB cdylib，可加载 |
 | 导出符号的真实数量 | 用 `objdump -p` 读导出表，并与宿主 `FindProc` 对照 | C 与 Rust 各 1 个，Go 4 个；宿主只按名查找 `cliproxy_plugin_init` |
-| C 骨架 | 本机无 `cmake`、`make` | **未能验证** |
+| C 骨架 | 无 `cmake`，改用 `gcc -shared` 直接编译 | 构建成功，273 KB DLL，可加载，导出 1 个符号 |
 
 最后一项是本机实测发现的真实阻塞问题，已写入 `references/pitfalls.md` 第 13 条。诊断结论是 TDM-GCC 10.3.0 链接出的 PE 节表含坏节，Windows 加载器直接拒绝整个映像。
 

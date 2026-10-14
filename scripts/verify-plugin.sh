@@ -148,7 +148,15 @@ if not menus:
     print("      (none registered)")
 for m in menus:
     p = m.get("path") if isinstance(m, dict) else m
-    print("      %s/v0/resource/plugins/%s%s" % (base, pid, p))
+    if not isinstance(p, str) or not p:
+        continue
+    # The listing returns an already-absolute path. Registration takes a
+    # relative one and the host expands it; do not prefix twice.
+    if p.startswith("/v0/") or p.startswith("http"):
+        url = base + p if p.startswith("/") else p
+    else:
+        url = base + "/v0/resource/plugins/" + pid + p
+    print("      " + url)
 __PYEOF2__
 
 echo
