@@ -50,7 +50,16 @@ echo "building '$PLUGIN_ID' ($LANG) -> $BIN_DIR/$PLUGIN_ID.$EXT"
 
 case "$LANG" in
   go)
-    ( cd "$PLUGIN_DIR" && go build -buildmode=c-shared -o "$BIN_DIR/$PLUGIN_ID.$EXT" . )
+    # A freshly scaffolded plugin has no go.sum, and go build refuses without
+    # one. That is exactly the new-plugin.sh -> build-plugin.sh path, so tidy
+    # first when go.sum is absent.
+    ( cd "$PLUGIN_DIR"
+      if [ ! -f go.sum ]; then
+        echo "  no go.sum yet; resolving modules with go mod tidy"
+        go mod tidy
+      fi
+      go build -buildmode=c-shared -o "$BIN_DIR/$PLUGIN_ID.$EXT" .
+    )
     # The generated header is not needed for distribution.
     [ -f "$BIN_DIR/$PLUGIN_ID.h" ] && mv "$BIN_DIR/$PLUGIN_ID.h" "$BIN_DIR/$PLUGIN_ID.h.unused"
     ;;
