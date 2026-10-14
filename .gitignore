@@ -1,0 +1,10 @@
+# scratch / build artifacts
+bin/
+dist/
+*.o
+*.so
+*.dylib
+*.dll
+*.h
+node_modules/
+*.log
