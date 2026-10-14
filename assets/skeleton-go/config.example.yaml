@@ -1,0 +1,11 @@
+# Drop this into the CPA config.yaml and adjust.
+# The plugin ID must match the dynamic library file name.
+
+plugins:
+  enabled: true          # global switch, default false
+  dir: "plugins"
+  configs:
+    __PLUGIN_ID__:
+      enabled: true      # per-plugin switch, absent means false
+      priority: 1        # higher runs earlier
+      mode: "safe"       # plugin-owned field declared in ConfigFields
