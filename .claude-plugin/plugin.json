@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Build, review, debug, scaffold and package native plugins for CLIProxyAPI (CPA) in Go, C or Rust.",
   "author": {
-    "name": "qyk",
+    "name": "qizhuxu",
     "email": "qykzhu@163.com"
   },
   "license": "MIT",

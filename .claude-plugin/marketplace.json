@@ -2,7 +2,7 @@
   "name": "cpa-plugin-dev",
   "description": "Claude Code plugin and skill for developing native CLIProxyAPI (CPA) plugins.",
   "owner": {
-    "name": "qyk",
+    "name": "qizhuxu",
     "email": "qykzhu@163.com"
   },
   "plugins": [

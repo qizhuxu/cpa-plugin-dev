@@ -11,14 +11,14 @@ CPA plugins are native shared libraries (`.so` / `.dylib` / `.dll`) loaded into 
 In a session:
 
 ```
-/plugin marketplace add qyk/cpa-plugin-dev
+/plugin marketplace add qizhuxu/cpa-plugin-dev
 /plugin install cpa-plugin-dev@cpa-plugin-dev
 ```
 
 From a shell, non-interactive:
 
 ```bash
-claude plugin marketplace add qyk/cpa-plugin-dev
+claude plugin marketplace add qizhuxu/cpa-plugin-dev
 claude plugin install cpa-plugin-dev@cpa-plugin-dev --scope user -y
 ```
 
@@ -34,19 +34,19 @@ Useful flags: `--dir <path>` for a target directory, `--agent codex` (or `agents
 With the open skills CLI:
 
 ```bash
-npx skills add qyk/cpa-plugin-dev
+npx skills add qizhuxu/cpa-plugin-dev
 ```
 
 Or straight from the git URL, with no npm package involved:
 
 ```bash
-npx github:qyk/cpa-plugin-dev --global
+npx github:qizhuxu/cpa-plugin-dev --global
 ```
 
 ### Manual
 
 ```bash
-git clone https://github.com/qyk/cpa-plugin-dev
+git clone https://github.com/qizhuxu/cpa-plugin-dev
 cp -R cpa-plugin-dev/skills/cpa-plugin-dev ~/.claude/skills/
 ```
 

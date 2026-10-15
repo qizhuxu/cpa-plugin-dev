@@ -9,7 +9,7 @@ CPA 的插件是加载进 CPA 进程内的原生动态库，通过稳定的 C AB
 Claude Code 插件：
 
 ```
-/plugin marketplace add qyk/cpa-plugin-dev
+/plugin marketplace add qizhuxu/cpa-plugin-dev
 /plugin install cpa-plugin-dev@cpa-plugin-dev
 ```
 
@@ -23,13 +23,13 @@ npx cpa-plugin-dev             # 装到 ./.claude/skills
 或使用 skills CLI：
 
 ```bash
-npx skills add qyk/cpa-plugin-dev
+npx skills add qizhuxu/cpa-plugin-dev
 ```
 
 手动：
 
 ```bash
-git clone https://github.com/qyk/cpa-plugin-dev
+git clone https://github.com/qizhuxu/cpa-plugin-dev
 cp -R cpa-plugin-dev/skills/cpa-plugin-dev ~/.claude/skills/
 ```
 
