@@ -1,0 +1,43 @@
+{
+  "name": "cpa-plugin-dev",
+  "version": "1.0.0",
+  "description": "Claude Code skill for building native CLIProxyAPI (CPA) plugins in Go, C or Rust.",
+  "license": "MIT",
+  "author": {
+    "name": "qyk",
+    "email": "qykzhu@163.com"
+  },
+  "homepage": "https://github.com/qyk/cpa-plugin-dev#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/qyk/cpa-plugin-dev.git"
+  },
+  "bugs": {
+    "url": "https://github.com/qyk/cpa-plugin-dev/issues"
+  },
+  "bin": {
+    "cpa-plugin-dev": "cli/install.mjs"
+  },
+  "files": [
+    "cli",
+    "skills",
+    ".claude-plugin",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "claude-code",
+    "agent-skill",
+    "claude-skill",
+    "cliproxyapi",
+    "cpa",
+    "plugin",
+    "native",
+    "abi",
+    "go",
+    "rust"
+  ]
+}

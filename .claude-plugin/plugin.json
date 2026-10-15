@@ -1,0 +1,21 @@
+{
+  "name": "cpa-plugin-dev",
+  "displayName": "CLIProxyAPI Plugin Development",
+  "version": "1.0.0",
+  "description": "Build, review, debug, scaffold and package native plugins for CLIProxyAPI (CPA) in Go, C or Rust.",
+  "author": {
+    "name": "qyk",
+    "email": "qykzhu@163.com"
+  },
+  "license": "MIT",
+  "keywords": [
+    "cliproxyapi",
+    "cpa",
+    "plugin",
+    "native",
+    "abi",
+    "go",
+    "rust",
+    "skill"
+  ]
+}

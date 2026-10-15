@@ -1,162 +1,117 @@
 # cpa-plugin-dev
 
-一个 Claude Code Agent Skill，用于开发 CLIProxyAPI（CPA）的原生插件。
+A Claude Code skill for building native plugins for [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) (CPA).
 
-CPA 的插件是加载进 CPA 进程内的原生动态库，通过稳定的 C ABI 通信。可以用 Go、C 或 Rust 编写。这个 skill 覆盖从需求解析到商店发布的完整闭环，全部内容对齐 CPA v8 源码，不依赖可能过期的文档描述。
+CPA plugins are native shared libraries (`.so` / `.dylib` / `.dll`) loaded into the CPA process and spoken to over a stable C ABI. They can be written in Go, C or Rust. This skill covers the full loop from requirement to store release, and every fact in it is checked against the CPA v8 source rather than against documentation that may have drifted.
 
-## 安装
+## Install
 
-作为个人 skill：
+### Claude Code plugin
 
-```bash
-cp -R cpa-plugin-dev ~/.claude/skills/
+In a session:
+
+```
+/plugin marketplace add qyk/cpa-plugin-dev
+/plugin install cpa-plugin-dev@cpa-plugin-dev
 ```
 
-作为项目 skill：
+From a shell, non-interactive:
 
 ```bash
-mkdir -p <项目>/.claude/skills
-cp -R cpa-plugin-dev <项目>/.claude/skills/
+claude plugin marketplace add qyk/cpa-plugin-dev
+claude plugin install cpa-plugin-dev@cpa-plugin-dev --scope user -y
 ```
 
-目录名与 frontmatter 的 `name` 必须一致，且入口是 `<name>/SKILL.md`。
+### npx
 
-## 结构
+```bash
+npx cpa-plugin-dev --global    # installs into ~/.claude/skills
+npx cpa-plugin-dev             # installs into ./.claude/skills
+```
+
+Useful flags: `--dir <path>` for a target directory, `--agent codex` (or `agents`, `cursor`, `opencode`) for another agent's skills directory, plus `--list`, `--dry-run`, `--force` and `--help`.
+
+With the open skills CLI:
+
+```bash
+npx skills add qyk/cpa-plugin-dev
+```
+
+Or straight from the git URL, with no npm package involved:
+
+```bash
+npx github:qyk/cpa-plugin-dev --global
+```
+
+### Manual
+
+```bash
+git clone https://github.com/qyk/cpa-plugin-dev
+cp -R cpa-plugin-dev/skills/cpa-plugin-dev ~/.claude/skills/
+```
+
+The directory name must match the `name` field in the frontmatter, and the entry point must be `<name>/SKILL.md`.
+
+## What it covers
+
+| Stage | Reference | What you get |
+|---|---|---|
+| 1 Requirements | `references/phase-1-requirements.md` | map a requirement onto capabilities, design the config fields |
+| 2 Plan | `references/phase-2-plan.md` | pick a language, scaffold, get one build passing |
+| 3 Develop | `references/phase-3-develop.md` | cgo skeleton, dispatch, envelope, per-capability notes |
+| 4 Test | `references/phase-4-test.md` | binary probe, toggles, the status fields, verification matrix |
+
+Contract layer, loaded only when needed:
+
+- `references/capabilities.md` — all 27 capability keys and the methods each one implies
+- `references/abi-contract.md` — the exported symbol, the JSON envelope, the `http_status` mapping
+- `references/host-callbacks.md` — the 19 `host.*` callbacks
+- `references/config-discovery.md` — config keys, plugin IDs, search order, Windows shadow copies
+- `references/packaging.md` — release zip, `checksums.txt`, `registry.json`
+- `references/pitfalls.md` — 17 checked documentation-versus-code discrepancies
+
+## Scripts
+
+```bash
+skills/cpa-plugin-dev/scripts/new-plugin.sh my-plugin go ./out
+skills/cpa-plugin-dev/scripts/build-plugin.sh ./out/my-plugin go
+skills/cpa-plugin-dev/scripts/check-capabilities.py ./out/my-plugin
+skills/cpa-plugin-dev/scripts/verify-plugin.sh my-plugin "$MANAGEMENT_KEY"
+```
+
+`check-capabilities.py`, `plan-capabilities.py` and `verify-plugin.sh` need Python 3. `build-plugin.sh` needs the toolchain for the language you picked.
+
+## Verified against
+
+The content is not transcribed from documentation. It was checked against the CPA v8 source and a live instance:
+
+- the capability key list diffed against `internal/pluginhost/rpc_schema.go` — 27 of 27
+- host callbacks from `internal/pluginhost/host_callbacks.go` — 19, matching
+- Windows loading from `loader_windows.go` (shadow copies), Linux from `loader_unix.go` (`dlopen` with `RTLD_NOW | RTLD_LOCAL`)
+- the Go, C and Rust skeletons built and loaded on Windows and on Linux
+- end to end on Linux CPA v8.0.28 and inside the `eceasy/cli-proxy-api` Docker image
+- cross-distribution glibc checked: an Ubuntu 24.04 build loads on `debian:bookworm`
+
+The Linux and Docker results come from a separate Ubuntu 24.04 machine, not from inference. That run exposed four defects in this skill, all of which have since been fixed.
+
+## Layout
 
 ```
 cpa-plugin-dev/
-├── SKILL.md                    入口：触发条件、四阶段决策树、硬约束、常见误解
-├── PLAN.md                     任务列表与验收标准
-├── references/                 按需载入的深度材料
-│   ├── phase-1-requirements.md   需求到能力的映射、配置字段设计、优先级
-│   ├── phase-2-plan.md           语言选型、目录布局、构建命令
-│   ├── phase-3-develop.md        cgo 骨架、dispatch、信封、各能力实现要点
-│   ├── phase-4-test.md           二进制探测、开关、四个状态字段、验证矩阵
-│   ├── capabilities.md           27 个能力键与对应 method（权威）
-│   ├── abi-contract.md           C ABI 符号、信封、错误 http_status 映射
-│   ├── host-callbacks.md         19 个 host.* 回调
-│   ├── config-discovery.md       配置键、插件 ID、搜索顺序、影子副本
-│   ├── packaging.md              release zip、checksums、registry.json
-│   └── pitfalls.md               12 条已核对的文档与代码不一致
-├── scripts/
-│   ├── new-plugin.sh             从骨架生成插件目录
-│   ├── build-plugin.sh           跨平台构建
-│   ├── verify-plugin.sh          走管理 API v8 验证加载与生效
-│   └── check-capabilities.py     校验能力声明与 dispatch 是否一致
-├── assets/
-│   ├── skeleton-go/              最小 Go 骨架（单个能力）
-│   ├── skeleton-c/               官方 C 示例（完整能力）
-│   └── skeleton-rust/            官方 Rust 示例（完整能力）
-└── docs/
-    ├── plugin-development.zh.md      官方《插件开发》文档正文
-    └── management-api-v8.zh.md       官方《管理 API v8》文档正文
+├── .claude-plugin/          plugin and marketplace manifests
+├── cli/install.mjs          the npx installer
+├── skills/cpa-plugin-dev/   the skill itself
+├── package.json
+└── LICENSE
 ```
 
-## 四阶段闭环
+## Known limits
 
-```
-定制要求  →  产出计划  →  开发  →  测试
-    ↑                                  |
-    └──────── 反馈回阶段一 ─────────────┘
-```
+- C and Rust are covered at the level of the official examples, not exhaustively
+- the per-capability verification matrix in `phase-4-test.md` is a checklist, not an automated test
+- store publishing is documented but has not been exercised as a real release
+- the embedded SDK (`sdk/cliproxy`) is a separate integration path and is out of scope
 
-| 阶段 | 入口 | 关键动作 |
-|---|---|---|
-| 一 定制要求 | `references/phase-1-requirements.md` | 需求映射到能力，定配置字段，**不写代码** |
-| 二 产出计划 | `references/phase-2-plan.md` | 选语言，跑 `new-plugin.sh`，跑通一次构建 |
-| 三 开发 | `references/phase-3-develop.md` | 按骨架写，`check-capabilities.py` 自检 |
-| 四 测试 | `references/phase-4-test.md` | `verify-plugin.sh`，看 `registered` 与 `effective_enabled` |
+## License
 
-## 脚本
-
-```bash
-# 生成插件目录
-scripts/new-plugin.sh my-plugin go ./out
-
-# 构建
-scripts/build-plugin.sh ./out/my-plugin go
-
-# 自检能力声明
-scripts/check-capabilities.py ./out/my-plugin
-
-# 验证加载与生效
-scripts/verify-plugin.sh my-plugin "$MANAGEMENT_KEY"
-```
-
-`check-capabilities.py` 与 `verify-plugin.sh` 需要 Python 3。`build-plugin.sh` 需要对应语言的工具链。
-
-## 已做的验证
-
-这个 skill 的内容不是从文档转述的，逐项对照过本机源码：
-
-| 验证项 | 方法 | 结果 |
-|---|---|---|
-| 能力键清单 | 与 `internal/pluginhost/rpc_schema.go` 的 `rpcCapabilities` 逐键 diff | 27 对 27，无缺失无多余 |
-| 方法名常量 | 取自 `sdk/pluginabi/types.go` | 一致 |
-| 宿主回调 | 取自 `internal/pluginhost/host_callbacks.go` 的 dispatch | 19 个，一致 |
-| 插件发现与扩展名 | 取自 `internal/pluginhost/platform.go` | 一致 |
-| Windows 加载机制 | 取自 `internal/pluginhost/loader_windows.go` | 影子副本，已记录 |
-| Go 骨架可构建 | 对本地源码 `go mod tidy` 加 `go build -buildmode=c-shared` | 成功，产出 8 MB DLL |
-| 导出符号 | 在构建产物中检索四个必需符号 | 全部存在 |
-| 校验脚本准确性 | 与宿主 schema diff，并对含错样例运行 | 27 对 27；含错样例报出 10 个问题 |
-| **实例加载与生效** | 启动 CPA 8.0.23，装载插件，读 `GET /v8/management/plugins` | `configured`、`enabled`、`registered`、`effective_enabled` 全为 true |
-| `verify-plugin.sh` 正例 | 对已加载插件运行 | 退出码 0，五个状态字段与 `path` 正确 |
-| `verify-plugin.sh` 反例 | 对不存在的 id、错误管理密钥运行 | 均退出非 0，并打印已知 id 列表 |
-| 管理 API 响应结构 | 与官方文档描述对照 | 文档缺 `configured` 字段，实际响应多一个 |
-| 执行器插件需要凭证 | 构建 executor 加 model_provider 插件并实际发请求 | 确认：无凭证时返回 `auth_not_found`，执行器从未被调用；加 `api-keys` 组无效 |
-| `http_status` 映射表 | 尝试用执行器插件实测 429 与省略两种情形 | **未完成**，被上一条的凭证问题阻塞 |
-| 工具链兼容性 | 同一骨架用两个 MinGW 各构建一次并尝试加载 | TDM-GCC 10.3.0 失败，MinGW-W64 11.3.0 成功 |
-| Rust 骨架 | `cargo build --release --locked`，再尝试加载 | 构建成功，137 KB cdylib，可加载 |
-| 导出符号的真实数量 | 用 `objdump -p` 读导出表，并与宿主 `FindProc` 对照 | C 与 Rust 各 1 个，Go 4 个；宿主只按名查找 `cliproxy_plugin_init` |
-| C 骨架 | 无 `cmake`，改用 `gcc -shared` 直接编译 | 构建成功，273 KB DLL，可加载，导出 1 个符号 |
-| **Linux 原生构建** | Ubuntu 24.04 + Go 1.27.2，用已发布 module `v8.0.28` | 成功，产出 `probe.so`，平台识别正确 |
-| **Linux 端到端** | Linux CPA v8.0.28 装载插件 | `registered` 与 `effective_enabled` 均为 true，路径 `plugins/probe.so` |
-| `verify-plugin.sh` on Linux | 对原生 CPA 运行 | 四个状态字段与路径均正确 |
-| C 骨架 on Linux | gcc 13.3 直接编译 | 成功，24 KB `.so`，导出 1 个符号 |
-| Rust 骨架 on Linux | cargo 1.99 `--release --locked` | 成功，438 KB `.so`，导出 1 个符号 |
-| **Docker** | `eceasy/cli-proxy-api` 容器挂载 `plugins/` | 插件加载并注册成功；管理 API 需 `allow-remote: true` |
-| `verify-plugin.sh` 对容器目标 | 经映射端口查询容器内 CPA | 正常工作 |
-| 跨发行版 glibc | Ubuntu 24.04 构建的 `.so` 放进 `debian:bookworm` | 可加载（最高需 `GLIBC_2.34`，bookworm 为 2.36） |
-| `go.mod` 模板默认路径 | 不改模板直接 `go mod tidy` | 成功，`v8.0.0` 是真实 tag |
-
-第 13 条那个工具链问题是 Windows 本机实测发现的。**Linux 与 Docker 的结果来自一台独立的 Ubuntu 24.04 机器**（AWS us-east，2 vCPU），不是在本机推断的。那一轮实测额外暴露了三个问题：`verify-plugin.sh` 在 Linux 上打印了 Windows 专属的影子副本提示；容器里的 CPA 管理 API 默认拒绝宿主机访问（403）；release 提供 `_no-plugin` 变体容易下错。三处都已修正并写入 `references/pitfalls.md` 第 15 至 17 条与 `phase-4-test.md` 的容器一节。
-
-## 布局参考
-
-目录布局参考了 `davidvkimball/obsidian-dev-skills` 的组织方式：一个入口 `SKILL.md`
-加一个按主题切分的 `references/` 目录，正文只放决策规则，细节全部下沉到参考文件。
-
-读过该仓库 `obsidian-dev/SKILL.md` 的实际内容后，有三点观察：
-
-**它走的是极薄路由风格。** `obsidian-dev/SKILL.md` 只有 35 行，正文仅 `Purpose`、
-`Scope`、`Core Rules`、`Bundled Resources` 四节，所有实质内容都在 `references/` 下。
-本 skill 的 `SKILL.md` 是 148 行，正文承载了决策树、硬约束表与常见误解表。
-
-这个差异是**刻意保留**的。官方 skill 编写指南要求正文承载工作流与规则、控制在 500 行以内，
-`skill-creator` 也把正文定位成"操作手册"而非纯索引。纯 35 行路由在 CPA 场景下会丢掉最
-该前置的东西：能力选型规则、`http_status` 这类一写错就静默失败的约束。所以保留了内容，
-只借用了它的**分文件方式**与**明确的资源指引段落**。
-
-**切分维度也不同。** 那个仓库按角色拆成 dev / ops / ref / theme-dev 四个并列 skill；
-本 skill 是一个 skill，`references/` 按生命周期阶段切分，因为 CPA 插件开发的难点在阶段
-衔接处（能力选错要返工、声明与实现不一致会静默失败），而不是角色分工。
-
-**表格化写法是共通的。** 正文里的 Do / Don't 表借用了同类 skill 的紧凑风格，内容全部
-针对 CPA 重写，没有照抄任何一行。
-
-## 素材来源
-
-内容源自本机 `D:\AI\BeAnything\CPA相关` 下的材料：
-
-- 官方《插件开发》与《管理 API v8》文档（中文页，已抽出正文存入 `docs/`）
-- `CLIProxyAPI源码`，module `github.com/router-for-me/CLIProxyAPI/v8`
-- `CLIProxyAPI源码/examples/plugin/` 下的 Go / C / Rust 示例
-
-C 与 Rust 骨架是官方示例的逐字复制。Go 骨架在官方示例基础上裁剪为单个能力，原因见 `assets/README.md`。
-
-## 已知边界
-
-- 未覆盖 C 与 Rust 的完整实现细节，两者以官方示例作为参考实现
-- `verify-plugin.sh` 的按能力验证矩阵是清单而非自动化，需要人工执行
-- 商店发布流程已文档化，但未在本机走通一次真实发布
-- 未包含 CPA 的嵌入 SDK（`sdk/cliproxy`），那是另一条集成路径
+MIT

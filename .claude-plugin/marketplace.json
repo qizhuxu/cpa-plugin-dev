@@ -1,0 +1,15 @@
+{
+  "name": "cpa-plugin-dev",
+  "description": "Claude Code plugin and skill for developing native CLIProxyAPI (CPA) plugins.",
+  "owner": {
+    "name": "qyk",
+    "email": "qykzhu@163.com"
+  },
+  "plugins": [
+    {
+      "name": "cpa-plugin-dev",
+      "source": ".",
+      "description": "Build, review, debug, scaffold and package native plugins for CLIProxyAPI (CPA) in Go, C or Rust."
+    }
+  ]
+}
