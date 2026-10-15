@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "Claude Code skill for building native CLIProxyAPI (CPA) plugins in Go, C or Rust.",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "author": {
     "name": "qizhuxu",
     "email": "qykzhu@163.com"
