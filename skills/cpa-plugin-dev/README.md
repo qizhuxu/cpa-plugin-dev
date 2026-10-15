@@ -40,7 +40,6 @@ cp -R cpa-plugin-dev/skills/cpa-plugin-dev ~/.claude/skills/
 ```
 cpa-plugin-dev/
 ├── SKILL.md                    入口：触发条件、四阶段决策树、硬约束、常见误解
-├── PLAN.md                     任务列表与验收标准
 ├── references/                 按需载入的深度材料
 │   ├── phase-1-requirements.md   需求到能力的映射、配置字段设计、优先级
 │   ├── phase-2-plan.md           语言选型、目录布局、构建命令
@@ -51,7 +50,7 @@ cpa-plugin-dev/
 │   ├── host-callbacks.md         19 个 host.* 回调
 │   ├── config-discovery.md       配置键、插件 ID、搜索顺序、影子副本
 │   ├── packaging.md              release zip、checksums、registry.json
-│   └── pitfalls.md               12 条已核对的文档与代码不一致
+│   └── pitfalls.md               17 条已核对的文档与代码不一致
 ├── scripts/
 │   ├── new-plugin.sh             从骨架生成插件目录
 │   ├── build-plugin.sh           跨平台构建
