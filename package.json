@@ -1,6 +1,6 @@
 {
   "name": "cpa-plugin-dev",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Claude Code skill for building native CLIProxyAPI (CPA) plugins in Go, C or Rust.",
   "license": "MIT",
   "publishConfig": {
