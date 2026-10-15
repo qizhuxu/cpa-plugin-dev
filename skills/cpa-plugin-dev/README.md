@@ -122,7 +122,7 @@ scripts/verify-plugin.sh my-plugin "$MANAGEMENT_KEY"
 | 工具链兼容性 | 同一骨架用两个 MinGW 各构建一次并尝试加载 | TDM-GCC 10.3.0 失败，MinGW-W64 11.3.0 成功 |
 | Rust 骨架 | `cargo build --release --locked`，再尝试加载 | 构建成功，137 KB cdylib，可加载 |
 | 导出符号的真实数量 | 用 `objdump -p` 读导出表，并与宿主 `FindProc` 对照 | C 与 Rust 各 1 个，Go 4 个；宿主只按名查找 `cliproxy_plugin_init` |
-| C 骨架 | 无 `cmake`，改用 `gcc -shared` 直接编译 | 构建成功，273 KB DLL，可加载，导出 1 个符号 |
+| C 骨架 | 走 `build-plugin.sh`，无 `cmake` 时脚本自动退回直接编译 | 构建成功，可加载，导出 1 个符号 |
 | **Linux 原生构建** | Ubuntu 24.04 + Go 1.27.2，用已发布 module `v8.0.28` | 成功，产出 `probe.so`，平台识别正确 |
 | **Linux 端到端** | Linux CPA v8.0.28 装载插件 | `registered` 与 `effective_enabled` 均为 true，路径 `plugins/probe.so` |
 | `verify-plugin.sh` on Linux | 对原生 CPA 运行 | 四个状态字段与路径均正确 |

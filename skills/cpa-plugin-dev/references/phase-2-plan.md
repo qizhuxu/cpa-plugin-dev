@@ -51,9 +51,12 @@ Go 插件的推荐布局，与社区 `cpa-plugin-*` 仓库一致：
 # Go
 cd <plugin-id>/go && go build -buildmode=c-shared -o <plugin-id>.so .
 
-# C
+# C（有 cmake）
 cmake -S <plugin-id>/c -B build/<plugin-id>
 cmake --build build/<plugin-id>
+
+# C（没有 cmake，骨架是单文件，直接编译即可）
+gcc -shared -fPIC -O2 -o <plugin-id>.so <plugin-id>/c/src/plugin.c
 
 # Rust
 cd <plugin-id>/rust && cargo build --release --locked

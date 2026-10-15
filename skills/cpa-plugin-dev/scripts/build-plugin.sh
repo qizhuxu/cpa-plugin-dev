@@ -64,10 +64,36 @@ case "$LANG" in
     [ -f "$BIN_DIR/$PLUGIN_ID.h" ] && mv "$BIN_DIR/$PLUGIN_ID.h" "$BIN_DIR/$PLUGIN_ID.h.unused"
     ;;
   c)
-    BUILD_DIR="$PLUGIN_DIR/build"
-    cmake -S "$PLUGIN_DIR" -B "$BUILD_DIR" \
-      -DCMAKE_LIBRARY_OUTPUT_DIRECTORY="$BIN_DIR" >/dev/null
-    cmake --build "$BUILD_DIR"
+    if command -v cmake >/dev/null 2>&1; then
+      BUILD_DIR="$PLUGIN_DIR/build"
+      cmake -S "$PLUGIN_DIR" -B "$BUILD_DIR" \
+        -DCMAKE_LIBRARY_OUTPUT_DIRECTORY="$BIN_DIR" >/dev/null
+      cmake --build "$BUILD_DIR"
+    else
+      # No cmake. The skeleton is a single translation unit, so compile it
+      # directly rather than failing. CC overrides the compiler; on Windows
+      # that matters, because some MinGW builds link DLLs the loader rejects
+      # (see pitfalls.md item 13).
+      SRC="$(find "$PLUGIN_DIR/src" -name '*.c' 2>/dev/null | head -n 1)"
+      [ -n "$SRC" ] || { echo "error: no .c file under $PLUGIN_DIR/src" >&2; exit 1; }
+      CC_BIN="${CC:-}"
+      if [ -z "$CC_BIN" ]; then
+        for _c in cc gcc clang; do
+          if command -v "$_c" >/dev/null 2>&1; then CC_BIN="$_c"; break; fi
+        done
+      fi
+      [ -n "$CC_BIN" ] || {
+        echo "error: neither cmake nor a C compiler is available" >&2
+        echo "       install cmake, or set CC to a working compiler" >&2
+        exit 1
+      }
+      case "$(uname -s)" in
+        Darwin) SHARED_FLAG="-dynamiclib" ;;
+        *)      SHARED_FLAG="-shared" ;;
+      esac
+      echo "  no cmake; compiling directly with $CC_BIN"
+      "$CC_BIN" "$SHARED_FLAG" -fPIC -O2 -o "$BIN_DIR/$PLUGIN_ID.$EXT" "$SRC"
+    fi
     ;;
   rust)
     ( cd "$PLUGIN_DIR" && CARGO_TARGET_DIR="$PLUGIN_DIR/build/rust" cargo build --release --locked )

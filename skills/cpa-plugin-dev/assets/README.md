@@ -48,9 +48,9 @@ C 与 Rust 骨架中的示例插件 ID（`example-simple-c` / `example-simple-ru
 |---|---|---|
 | `skeleton-go` | 是 | 对本地 v8 源码构建成功，装载进 CPA 8.0.23 后 `registered` 与 `effective_enabled` 均为 true |
 | `skeleton-rust` | 是 | `cargo build --release --locked` 成功，产出 137 KB cdylib，可加载，导出 `cliproxy_plugin_init` |
-| `skeleton-c` | 是 | 本机没有 `cmake`，但 `CMakeLists.txt` 只是 `add_library(... SHARED src/plugin.c)`，用 `gcc -shared -O2` 直接编译成功：273 KB DLL，可加载，导出符号为 `cliproxy_plugin_init` 一个 |
+| `skeleton-c` | 是 | `build-plugin.sh` 在缺少 `cmake` 时自动退回直接编译（骨架是单文件），构建成功，可加载，导出符号为 `cliproxy_plugin_init` 一个 |
 
-三个骨架的构建都已实测。没有 `cmake` 时可以直接用 `gcc -shared -o <id>.dll src/plugin.c`，效果与 CMake 路径一致。
+三个骨架的构建都已实测。`build-plugin.sh` 的 C 分支先找 `cmake`，找不到就退回直接编译单文件，两条路径产出的库都实测可加载。
 
 ## 构建
 
@@ -64,8 +64,11 @@ scripts/build-plugin.sh <插件目录> [go|c|rust]
 # Go
 go build -buildmode=c-shared -o <plugin-id>.so .
 
-# C
+# C（有 cmake）
 cmake -S . -B build && cmake --build build
+
+# C（没有 cmake）
+gcc -shared -fPIC -O2 -o <plugin-id>.so src/plugin.c
 
 # Rust
 cargo build --release --locked

@@ -2,6 +2,8 @@
 
 目标：把一个模糊的"我想让 CPA 做 X"变成一份明确的能力清单和配置草案。**这一阶段不写代码。**
 
+前置阅读：`references/capabilities.md`、`references/abi-contract.md`、`references/config-discovery.md`。
+
 ## 第一步：把需求映射到能力
 
 CPA 的插件能力分成五组。按用户描述先定位到组，再定位到具体能力。
@@ -98,4 +100,6 @@ scripts/plan-capabilities.py <能力键>... --id <plugin-id>
 dispatch 的待办列表，配置块直接贴进 CPA 的 `config.yaml`。阶段三写完代码后再用
 `scripts/check-capabilities.py` 反向核对声明与实现是否一致。
 
-确认这四项之后再进入阶段二。**能力声明一旦写错，后续所有阶段都要返工。**
+确认这四项之后再进入 `phase-2-plan.md`。能力声明一旦写错，后续所有阶段都要返工，所以这一步宁可慢一点。
+
+声明落到代码之后，用 `scripts/check-capabilities.py` 反向核对声明与实现是否一致；验证加载与生效的完整流程见 `phase-4-test.md`。踩过的坑集中在 `pitfalls.md`。
