@@ -10,3 +10,6 @@ node_modules/
 *.log
 
 # note: the repo's cli/ directory is source (the npx installer), never ignored
+
+# the build plan is a local working document, not published
+PLAN.md

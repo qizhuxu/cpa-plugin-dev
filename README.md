@@ -1,21 +1,23 @@
+中文 | [English](README.en.md)
+
 # cpa-plugin-dev
 
-A Claude Code skill for building native plugins for [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) (CPA).
+一个用于开发 [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI)（CPA）原生插件的 Claude Code skill。
 
-CPA plugins are native shared libraries (`.so` / `.dylib` / `.dll`) loaded into the CPA process and spoken to over a stable C ABI. They can be written in Go, C or Rust. This skill covers the full loop from requirement to store release, and every fact in it is checked against the CPA v8 source rather than against documentation that may have drifted.
+CPA 插件是加载进 CPA 进程内的原生动态库（`.so` / `.dylib` / `.dll`），通过稳定的 C ABI 通信，可以用 Go、C 或 Rust 编写。这个 skill 覆盖从需求到商店发布的完整闭环，全部内容对齐 CPA v8 源码，而不是转述可能已经过期的文档。
 
-## Install
+## 安装
 
-### Claude Code plugin
+### Claude Code 插件
 
-In a session:
+在会话里：
 
 ```
 /plugin marketplace add qizhuxu/cpa-plugin-dev
 /plugin install cpa-plugin-dev@cpa-plugin-dev
 ```
 
-From a shell, non-interactive:
+在终端里，非交互：
 
 ```bash
 claude plugin marketplace add qizhuxu/cpa-plugin-dev
@@ -25,52 +27,52 @@ claude plugin install cpa-plugin-dev@cpa-plugin-dev --scope user -y
 ### npx
 
 ```bash
-npx cpa-plugin-dev --global    # installs into ~/.claude/skills
-npx cpa-plugin-dev             # installs into ./.claude/skills
+npx cpa-plugin-dev --global    # 装到 ~/.claude/skills
+npx cpa-plugin-dev             # 装到 ./.claude/skills
 ```
 
-Useful flags: `--dir <path>` for a target directory, `--agent codex` (or `agents`, `cursor`, `opencode`) for another agent's skills directory, plus `--list`, `--dry-run`, `--force` and `--help`.
+常用参数：`--dir <path>` 指定目标目录，`--agent codex`（或 `agents`、`cursor`、`opencode`）装到别的 agent 的 skills 目录，另外还有 `--list`、`--dry-run`、`--force`、`--help`。
 
-With the open skills CLI:
+用开放的 skills CLI：
 
 ```bash
 npx skills add qizhuxu/cpa-plugin-dev
 ```
 
-Or straight from the git URL, with no npm package involved:
+或者直接从 git 地址走，完全不经过 npm：
 
 ```bash
 npx github:qizhuxu/cpa-plugin-dev --global
 ```
 
-### Manual
+### 手动
 
 ```bash
 git clone https://github.com/qizhuxu/cpa-plugin-dev
 cp -R cpa-plugin-dev/skills/cpa-plugin-dev ~/.claude/skills/
 ```
 
-The directory name must match the `name` field in the frontmatter, and the entry point must be `<name>/SKILL.md`.
+目录名必须与 frontmatter 里的 `name` 一致，入口必须是 `<name>/SKILL.md`。
 
-## What it covers
+## 覆盖内容
 
-| Stage | Reference | What you get |
+| 阶段 | 参考文件 | 产出 |
 |---|---|---|
-| 1 Requirements | `references/phase-1-requirements.md` | map a requirement onto capabilities, design the config fields |
-| 2 Plan | `references/phase-2-plan.md` | pick a language, scaffold, get one build passing |
-| 3 Develop | `references/phase-3-develop.md` | cgo skeleton, dispatch, envelope, per-capability notes |
-| 4 Test | `references/phase-4-test.md` | binary probe, toggles, the status fields, verification matrix |
+| 一 定制要求 | `references/phase-1-requirements.md` | 需求映射到能力，设计配置字段 |
+| 二 产出计划 | `references/phase-2-plan.md` | 选语言，脚手架，跑通一次构建 |
+| 三 开发 | `references/phase-3-develop.md` | cgo 骨架、dispatch、信封、各能力要点 |
+| 四 测试 | `references/phase-4-test.md` | 二进制探测、开关、状态字段、验证矩阵 |
 
-Contract layer, loaded only when needed:
+契约层，按需载入：
 
-- `references/capabilities.md` — all 27 capability keys and the methods each one implies
-- `references/abi-contract.md` — the exported symbol, the JSON envelope, the `http_status` mapping
-- `references/host-callbacks.md` — the 19 `host.*` callbacks
-- `references/config-discovery.md` — config keys, plugin IDs, search order, Windows shadow copies
-- `references/packaging.md` — release zip, `checksums.txt`, `registry.json`
-- `references/pitfalls.md` — 17 checked documentation-versus-code discrepancies
+- `references/capabilities.md` — 全部 27 个能力键与对应方法
+- `references/abi-contract.md` — 导出符号、JSON 信封、`http_status` 映射
+- `references/host-callbacks.md` — 19 个 `host.*` 回调
+- `references/config-discovery.md` — 配置键、插件 ID、搜索顺序、影子副本
+- `references/packaging.md` — release zip、`checksums.txt`、`registry.json`
+- `references/pitfalls.md` — 17 条已核对的文档与代码不一致
 
-## Scripts
+## 脚本
 
 ```bash
 skills/cpa-plugin-dev/scripts/new-plugin.sh my-plugin go ./out
@@ -79,39 +81,39 @@ skills/cpa-plugin-dev/scripts/check-capabilities.py ./out/my-plugin
 skills/cpa-plugin-dev/scripts/verify-plugin.sh my-plugin "$MANAGEMENT_KEY"
 ```
 
-`check-capabilities.py`, `plan-capabilities.py` and `verify-plugin.sh` need Python 3. `build-plugin.sh` needs the toolchain for the language you picked.
+`check-capabilities.py`、`plan-capabilities.py` 与 `verify-plugin.sh` 需要 Python 3。`build-plugin.sh` 需要所选语言的工具链。
 
-## Verified against
+## 验证情况
 
-The content is not transcribed from documentation. It was checked against the CPA v8 source and a live instance:
+内容不是从文档转述的，逐项对照过 CPA v8 源码与一个真实实例：
 
-- the capability key list diffed against `internal/pluginhost/rpc_schema.go` — 27 of 27
-- host callbacks from `internal/pluginhost/host_callbacks.go` — 19, matching
-- Windows loading from `loader_windows.go` (shadow copies), Linux from `loader_unix.go` (`dlopen` with `RTLD_NOW | RTLD_LOCAL`)
-- the Go, C and Rust skeletons built and loaded on Windows and on Linux
-- end to end on Linux CPA v8.0.28 and inside the `eceasy/cli-proxy-api` Docker image
-- cross-distribution glibc checked: an Ubuntu 24.04 build loads on `debian:bookworm`
+- 能力键清单与 `internal/pluginhost/rpc_schema.go` 逐键 diff — 27 对 27
+- 宿主回调取自 `internal/pluginhost/host_callbacks.go` — 19 个，一致
+- Windows 加载取自 `loader_windows.go`（影子副本），Linux 取自 `loader_unix.go`（`dlopen` 配 `RTLD_NOW | RTLD_LOCAL`）
+- Go、C、Rust 三语言骨架在 Windows 与 Linux 上都实测构建并加载
+- 在 Linux CPA v8.0.28 与 `eceasy/cli-proxy-api` Docker 镜像里端到端跑通
+- 跨发行版 glibc 实测：Ubuntu 24.04 的构建产物能在 `debian:bookworm` 里加载
 
-The Linux and Docker results come from a separate Ubuntu 24.04 machine, not from inference. That run exposed four defects in this skill, all of which have since been fixed.
+Linux 与 Docker 的结果来自一台独立的 Ubuntu 24.04 机器，不是在本机推断的。那一轮实测额外暴露了本 skill 的四个缺陷，均已修复。
 
-## Layout
+## 仓库结构
 
 ```
 cpa-plugin-dev/
-├── .claude-plugin/          plugin and marketplace manifests
-├── cli/install.mjs          the npx installer
-├── skills/cpa-plugin-dev/   the skill itself
+├── .claude-plugin/          插件与商店清单
+├── cli/install.mjs          npx 安装器
+├── skills/cpa-plugin-dev/   skill 本体
 ├── package.json
 └── LICENSE
 ```
 
-## Known limits
+## 已知边界
 
-- C and Rust are covered at the level of the official examples, not exhaustively
-- the per-capability verification matrix in `phase-4-test.md` is a checklist, not an automated test
-- store publishing is documented but has not been exercised as a real release
-- the embedded SDK (`sdk/cliproxy`) is a separate integration path and is out of scope
+- C 与 Rust 只覆盖到官方示例的程度，不是穷尽式
+- `phase-4-test.md` 里的按能力验证矩阵是清单，不是自动化测试
+- 商店发布流程已文档化，但没有走过一次真实发布
+- 嵌入 SDK（`sdk/cliproxy`）是另一条集成路径，不在范围内
 
-## License
+## 许可
 
 MIT
